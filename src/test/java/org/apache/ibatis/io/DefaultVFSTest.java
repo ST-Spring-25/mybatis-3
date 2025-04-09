@@ -15,7 +15,9 @@
  */
 package org.apache.ibatis.io;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
@@ -42,9 +44,7 @@ class DefaultVFSTest {
   }
 
   /**
-   * Test Case 1:
-   * Equivalence Partition Testing
-   * Tests jar file detection by dividing the input into valid and invalid
+   * Test Case 1: Equivalence Partition Testing Tests jar file detection by dividing the input into valid and invalid
    * cases. The first test is a valid case, and tests if the vfs can detect jar files correctly. The second test is an
    * invalid case, and tests if the vfs can detect non-jar files correctly.
    **/
@@ -52,9 +52,7 @@ class DefaultVFSTest {
   void testJarFileDetection() throws Exception {
     // Test valid jar file detection
     Path jarPath = tempDir.resolve("test.jar");
-    try (
-      JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarPath))
-    ) {
+    try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarPath))) {
       JarEntry entry = new JarEntry("test.txt");
       jos.putNextEntry(entry);
       jos.write("test".getBytes(StandardCharsets.UTF_8));
@@ -68,5 +66,32 @@ class DefaultVFSTest {
     Files.writeString(txtPath, "Not a Jar");
     URL txtUrl = txtPath.toUri().toURL();
     assertFalse(vfs.isJar(txtUrl), "Should not detect non-jar file");
+  }
+
+  /**
+   * Test Case 2: Boundary Value Analysis Tests package path conversion with different values: standard package name,
+   * empty string, null value, and special characters
+   **/
+  @Test
+  void testGetPackagePath() {
+    // Normal Cases
+    // Standard Package Name
+    assertEquals("org/apache/ibatis", vfs.getPackagePath("org/apache/ibatis"),
+        "Package name should be converted properly");
+
+    // Single-segment package
+    assertEquals("single", vfs.getPackagePath("single"), "Single-segment package name should be preserved");
+
+    // Long package name
+    assertEquals("org/apache/ibatis/really/long/name/that/just/keeps/on/going",
+        vfs.getPackagePath("org.apache.ibatis.really.long.name.that.just.keeps.on.going"),
+        "Long package name should be converted correctly");
+
+    // Boundary Cases
+    // Empty String
+    assertEquals("", vfs.getPackagePath(""), "An empty string should return an empty output");
+
+    // Null Input
+    assertNull(vfs.getPackagePath(null), "Null input should have null output");
   }
 }
