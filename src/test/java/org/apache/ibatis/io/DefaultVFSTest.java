@@ -42,7 +42,9 @@ class DefaultVFSTest {
   }
 
   /**
-   * Test Case 1: Equivalence Partition Testing Tests jar file detection by dividing the input into valid and invalid
+   * Test Case 1:
+   * Equivalence Partition Testing
+   * Tests jar file detection by dividing the input into valid and invalid
    * cases. The first test is a valid case, and tests if the vfs can detect jar files correctly. The second test is an
    * invalid case, and tests if the vfs can detect non-jar files correctly.
    **/
@@ -50,7 +52,9 @@ class DefaultVFSTest {
   void testJarFileDetection() throws Exception {
     // Test valid jar file detection
     Path jarPath = tempDir.resolve("test.jar");
-    try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarPath))) {
+    try (
+      JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarPath))
+    ) {
       JarEntry entry = new JarEntry("test.txt");
       jos.putNextEntry(entry);
       jos.write("test".getBytes(StandardCharsets.UTF_8));
