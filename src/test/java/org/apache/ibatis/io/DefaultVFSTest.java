@@ -24,7 +24,9 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -93,5 +95,40 @@ class DefaultVFSTest {
 
     // Null Input
     assertNull(vfs.getPackagePath(null), "Null input should have null output");
+  }
+
+  /**
+   * Test Case 3: State-Based Testing. Tests the state transformation when listing resources out of a jar file. Verifies
+   * that resources in a specific path are correctly identified
+   **/
+  @Test
+  void testListResourcesFromJarInputStream() throws Exception {
+    Path jarPath = tempDir.resolve("resources.jar");
+
+    try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarPath))) {
+      JarEntry testEntry = new JarEntry("/path/to/test.txt");
+      jos.putNextEntry(testEntry);
+      jos.write("Some content".getBytes());
+      jos.closeEntry();
+
+      JarEntry testEntry2 = new JarEntry("/path/to/other/resources.txt");
+      jos.putNextEntry(testEntry2);
+      jos.write("More Testing Content".getBytes());
+      jos.closeEntry();
+
+      JarEntry testEntry3 = new JarEntry("/path/to/test3.txt");
+      jos.putNextEntry(testEntry3);
+      jos.write("Maybe Not Testing Content?".getBytes());
+      jos.closeEntry();
+    }
+
+    try (JarInputStream jis = new JarInputStream(Files.newInputStream(jarPath))) {
+      List<String> resources = vfs.listResources(jis, "path/to");
+
+      assertEquals(3, resources.size(), "There should be 3 resources in this path");
+      assertTrue(resources.contains("path/to/test.txt"), "Should find test one's test.txt");
+      assertTrue(resources.contains("path/to/other/resources.txt"), "Should find test two's test.txt");
+      assertTrue(resources.contains("path/to/test3.txt"), "Should find test three's test.txt");
+    }
   }
 }
