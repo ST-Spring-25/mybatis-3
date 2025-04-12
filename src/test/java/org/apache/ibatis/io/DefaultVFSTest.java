@@ -131,4 +131,34 @@ class DefaultVFSTest {
       assertTrue(resources.contains("path/to/test3.txt"), "Should find test three's test.txt");
     }
   }
+
+  /**
+   * Test Case 4: Boundary Value Analysis. Tests the handling of paths with special characters and/or spaces. All modern
+   * filesystems support these types of directories/filenames, so it is imperative that they are implemented properly.
+   */
+  @Test
+  void testSpecialCharacterHandling() throws Exception {
+    Path jarPath = tempDir.resolve("special-chars.jar");
+
+    try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(jarPath))) {
+      jos.putNextEntry(new JarEntry("path with spaces/fi le.txt"));
+      jos.write("content1".getBytes(StandardCharsets.UTF_8));
+      jos.closeEntry();
+
+      jos.putNextEntry(new JarEntry("path_with-special@chars?/f!le.txt"));
+      jos.write("content2".getBytes(StandardCharsets.UTF_8));
+      jos.closeEntry();
+    }
+
+    URL jarUrl = new URL("jar:" + jarPath.toUri().toURL() + "!/");
+
+    List<String> spacesResources = vfs.list(jarUrl, "path with spaces");
+    assertEquals(1, spacesResources.size(), "Should handle paths with spaces");
+    assertTrue(spacesResources.contains("path with spaces/fi le.txt"), "Should find file in path with spaces");
+
+    List<String> specialResources = vfs.list(jarUrl, "path_with-special@chars?");
+    assertEquals(1, specialResources.size(), "Should handle paths with special characters");
+    assertTrue(specialResources.contains("path_with-special@chars?/f!le.txt"),
+        "Should find file in path with special characters");
+  }
 }
