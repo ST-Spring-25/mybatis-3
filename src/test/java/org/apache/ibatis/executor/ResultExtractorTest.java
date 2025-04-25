@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2024 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -102,5 +102,59 @@ class ResultExtractorTest {
   void shouldFailWhenMutipleItemsInList() {
     final List<Object> list = Arrays.asList("first object", "second object");
     Assertions.assertThrows(ExecutorException.class, () -> resultExtractor.extractObjectFromList(list, String.class));
+  }
+
+  /**
+   * Test Case 9: Tests ResultExtractor's ability to convert Lists to primitive arrays. Java doesn't allow direct
+   * conversion from boxed to primitive types in array operations.
+   */
+  @Test
+  void shouldExtractIntPrimitiveArray() {
+    // List of Integer objects
+    List<Object> list = Arrays.asList(1, 2, 3, 4, 5);
+
+    // Extract to primitive int array
+    Object result = resultExtractor.extractObjectFromList(list, int[].class);
+
+    // Verify result is int[] with expected values
+    assertThat(result).isInstanceOf(int[].class);
+    int[] intArray = (int[]) result;
+    assertThat(intArray).hasSize(5);
+    assertThat(intArray).containsExactly(1, 2, 3, 4, 5);
+  }
+
+  @Test
+  void shouldExtractBooleanPrimitiveArray() {
+    List<Object> list = Arrays.asList(true, false, true);
+
+    Object result = resultExtractor.extractObjectFromList(list, boolean[].class);
+
+    assertThat(result).isInstanceOf(boolean[].class);
+    boolean[] boolArray = (boolean[]) result;
+    assertThat(boolArray).hasSize(3);
+    assertThat(boolArray).containsExactly(true, false, true);
+  }
+
+  @Test
+  void shouldExtractLongPrimitiveArray() {
+    List<Object> list = Arrays.asList(100L, 200L, 300L);
+
+    Object result = resultExtractor.extractObjectFromList(list, long[].class);
+
+    assertThat(result).isInstanceOf(long[].class);
+    long[] longArray = (long[]) result;
+    assertThat(longArray).hasSize(3);
+    assertThat(longArray).containsExactly(100L, 200L, 300L);
+  }
+
+  @Test
+  void shouldExtractEmptyPrimitiveArray() {
+    List<Object> list = Arrays.asList();
+
+    Object result = resultExtractor.extractObjectFromList(list, char[].class);
+
+    assertThat(result).isInstanceOf(char[].class);
+    char[] charArray = (char[]) result;
+    assertThat(charArray).hasSize(0);
   }
 }
