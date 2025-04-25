@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2024 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -109,4 +110,24 @@ class SqlRunnerTest extends BaseDataTest {
       assertEquals(1, rows.size());
     }
   }
+
+  /**
+   * Test Case 10: This test verifies the behavior of SqlRunner when provided with an input type that does not have a
+   * registered TypeHandler. An SQLException should be thrown since SqlRunner is unable to handle such parameter types.
+   */
+
+  @Test
+  void shouldThrowWhenArgumentIsNullButNotTyped() throws Exception {
+    DataSource ds = createUnpooledDataSource(BLOG_PROPERTIES);
+    runScript(ds, BLOG_DDL);
+    try (Connection connection = ds.getConnection()) {
+      SqlRunner exec = new SqlRunner(connection);
+      SQLException ex = org.junit.jupiter.api.Assertions.assertThrows(SQLException.class, () -> {
+        exec.insert("INSERT INTO author (username, password, email, bio) VALUES (?,?,?,?)", "null-test", null,
+            "test@apache.org", Null.LONGVARCHAR);
+      });
+      assertTrue(ex.getMessage().contains("requires an instance of Null"));
+    }
+  }
+
 }
