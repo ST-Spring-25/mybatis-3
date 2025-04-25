@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2024 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,9 +24,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.sql.Array;
-import java.sql.Connection;
-import java.sql.Types;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.net.URL;
+import java.sql.*;
+import java.time.*;
+import java.util.Calendar;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -118,6 +121,71 @@ class ArrayTypeHandlerTest extends BaseTypeHandlerTest {
   public void shouldGetResultNullFromCallableStatement() throws Exception {
     when(cs.getArray(1)).thenReturn(null);
     assertNull(TYPE_HANDLER.getResult(cs, 1));
+  }
+
+  /**
+   * Test Case 8: Tests the ArrayTypeHandler's type resolution mechanism which maps Java types to SQL type names.
+   * The test verifies three key scenarios:
+   * 1. Standard type mappings defined in STANDARD_MAPPING are correctly resolved
+   * 2. Non-standard types default to "JAVA_OBJECT" as expected
+   * 3. Array types themselves are handled appropriately within the resolution system
+   **/
+  static class TestableArrayTypeHandler extends ArrayTypeHandler {
+    public String publicResolveTypeName(Class<?> type) {
+      return resolveTypeName(type);
+    }
+  }
+
+  private final TestableArrayTypeHandler handler = new TestableArrayTypeHandler();
+
+  @Test
+  void shouldResolveStandardTypes() {
+    assertEquals("NUMERIC", handler.publicResolveTypeName(BigDecimal.class));
+    assertEquals("BIGINT", handler.publicResolveTypeName(BigInteger.class));
+    assertEquals("BOOLEAN", handler.publicResolveTypeName(boolean.class));
+    assertEquals("BOOLEAN", handler.publicResolveTypeName(Boolean.class));
+    assertEquals("VARBINARY", handler.publicResolveTypeName(byte[].class));
+    assertEquals("TINYINT", handler.publicResolveTypeName(byte.class));
+    assertEquals("TINYINT", handler.publicResolveTypeName(Byte.class));
+    assertEquals("TIMESTAMP", handler.publicResolveTypeName(Calendar.class));
+    assertEquals("DATE", handler.publicResolveTypeName(java.sql.Date.class));
+    assertEquals("TIMESTAMP", handler.publicResolveTypeName(java.util.Date.class));
+    assertEquals("DOUBLE", handler.publicResolveTypeName(double.class));
+    assertEquals("DOUBLE", handler.publicResolveTypeName(Double.class));
+    assertEquals("REAL", handler.publicResolveTypeName(float.class));
+    assertEquals("REAL", handler.publicResolveTypeName(Float.class));
+    assertEquals("INTEGER", handler.publicResolveTypeName(int.class));
+    assertEquals("INTEGER", handler.publicResolveTypeName(Integer.class));
+    assertEquals("DATE", handler.publicResolveTypeName(LocalDate.class));
+    assertEquals("TIMESTAMP", handler.publicResolveTypeName(LocalDateTime.class));
+    assertEquals("TIME", handler.publicResolveTypeName(LocalTime.class));
+    assertEquals("BIGINT", handler.publicResolveTypeName(long.class));
+    assertEquals("BIGINT", handler.publicResolveTypeName(Long.class));
+    assertEquals("TIMESTAMP_WITH_TIMEZONE", handler.publicResolveTypeName(OffsetDateTime.class));
+    assertEquals("TIME_WITH_TIMEZONE", handler.publicResolveTypeName(OffsetTime.class));
+    assertEquals("SMALLINT", handler.publicResolveTypeName(Short.class));
+    assertEquals("VARCHAR", handler.publicResolveTypeName(String.class));
+    assertEquals("TIME", handler.publicResolveTypeName(Time.class));
+    assertEquals("TIMESTAMP", handler.publicResolveTypeName(Timestamp.class));
+    assertEquals("DATALINK", handler.publicResolveTypeName(URL.class));
+  }
+
+  @Test
+  void shouldReturnJavaObjectForNonStandardTypes() {
+    class CustomClass {
+    }
+
+    assertEquals("JAVA_OBJECT", handler.publicResolveTypeName(CustomClass.class));
+    assertEquals("JAVA_OBJECT", handler.publicResolveTypeName(StringBuilder.class));
+    assertEquals("JAVA_OBJECT", handler.publicResolveTypeName(Object.class));
+  }
+
+  @Test
+  void shouldHandleArrayTypes() {
+    // Array types should also be JAVA_OBJECTs
+    assertEquals("JAVA_OBJECT", handler.publicResolveTypeName(String[].class));
+    assertEquals("JAVA_OBJECT", handler.publicResolveTypeName(Integer[].class));
+    assertEquals("JAVA_OBJECT", handler.publicResolveTypeName(Object[].class));
   }
 
 }
