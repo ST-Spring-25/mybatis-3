@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2024 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.googlecode.catchexception.apis.BDDCatchException.when;
 import static org.assertj.core.api.BDDAssertions.then;
 
 import java.lang.reflect.Field;
+import java.util.Properties;
 
 import org.apache.ibatis.builder.InitializingObject;
 import org.apache.ibatis.cache.Cache;
@@ -88,6 +89,72 @@ class CacheBuilderTest {
       throw new IllegalStateException("error");
     }
 
+  }
+
+  /**
+   * Test Case 7: Verifies that CacheBuilder correctly converts string properties to various types when setting cache
+   * properties, ensuring type conversion handles all supported data types properly.
+   */
+  @Test
+  void propertyTypeConversion() {
+    Properties properties = new Properties();
+    properties.setProperty("stringProperty", "test");
+    properties.setProperty("intProperty", "42");
+    properties.setProperty("longProperty", "9223372036854775807");
+    properties.setProperty("shortProperty", "32767");
+    properties.setProperty("byteProperty", "127");
+    properties.setProperty("floatProperty", "8.72");
+    properties.setProperty("doubleProperty", "2.113211");
+    properties.setProperty("booleanProperty", "true");
+
+    Cache cache = new CacheBuilder("typeTest").implementation(TypedPropertiesCache.class).properties(properties)
+        .build();
+
+    TypedPropertiesCache typedCache = unwrap(cache);
+
+    Assertions.assertThat(typedCache.stringProperty).isEqualTo("test");
+    Assertions.assertThat(typedCache.intProperty).isEqualTo(42);
+    Assertions.assertThat(typedCache.longProperty).isEqualTo(9223372036854775807L);
+    Assertions.assertThat(typedCache.shortProperty).isEqualTo((short) 32767);
+    Assertions.assertThat(typedCache.byteProperty).isEqualTo((byte) 127);
+    Assertions.assertThat(typedCache.floatProperty).isEqualTo(8.72f);
+    Assertions.assertThat(typedCache.doubleProperty).isEqualTo(2.113211);
+    Assertions.assertThat(typedCache.booleanProperty).isTrue();
+  }
+
+  @Test
+  void unsupportedPropertyType() {
+    Properties properties = new Properties();
+    properties.setProperty("characterProperty", "A");
+
+    // Should throw CacheException due to an unsupported type
+    when(() -> new CacheBuilder("unsupportedTest").implementation(UnsupportedTypeCache.class).properties(properties)
+        .build());
+
+    then(caughtException()).isInstanceOf(CacheException.class)
+        .hasMessageContaining("Unsupported property type for cache");
+  }
+
+  private static class TypedPropertiesCache extends PerpetualCache {
+    private String stringProperty;
+    private int intProperty;
+    private long longProperty;
+    private short shortProperty;
+    private byte byteProperty;
+    private float floatProperty;
+    private double doubleProperty;
+    private boolean booleanProperty;
+
+    public TypedPropertiesCache(String id) {
+      super(id);
+    }
+  }
+
+  private static class UnsupportedTypeCache extends PerpetualCache {
+
+    public UnsupportedTypeCache(String id) {
+      super(id);
+    }
   }
 
 }
