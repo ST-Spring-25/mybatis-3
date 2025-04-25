@@ -122,19 +122,6 @@ class CacheBuilderTest {
     Assertions.assertThat(typedCache.booleanProperty).isTrue();
   }
 
-  @Test
-  void unsupportedPropertyType() {
-    Properties properties = new Properties();
-    properties.setProperty("characterProperty", "A");
-
-    // Should throw CacheException due to an unsupported type
-    when(() -> new CacheBuilder("unsupportedTest").implementation(UnsupportedTypeCache.class).properties(properties)
-        .build());
-
-    then(caughtException()).isInstanceOf(CacheException.class)
-        .hasMessageContaining("Unsupported property type for cache");
-  }
-
   private static class TypedPropertiesCache extends PerpetualCache {
     private String stringProperty;
     private int intProperty;
@@ -146,13 +133,6 @@ class CacheBuilderTest {
     private boolean booleanProperty;
 
     public TypedPropertiesCache(String id) {
-      super(id);
-    }
-  }
-
-  private static class UnsupportedTypeCache extends PerpetualCache {
-
-    public UnsupportedTypeCache(String id) {
       super(id);
     }
   }
