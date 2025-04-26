@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2024 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.io.Resources;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
@@ -229,6 +230,28 @@ class XPathParserTest {
     XNode node = parser.evalNode("/employee/height");
     assertEquals("employee/height", node.getPath());
     assertEquals("employee[${id_var}]_height", node.getValueBasedIdentifier());
+  }
+
+  /**
+   * Test Case 6: Verifies that XPathParser properly handles XML external entity (XXE) attack vectors by
+   * ensuring that it prevents processing of a malicious XML file. (Thank you, Wikipedia)
+   */
+  @Test
+  void securityAgainstXXEAttacks() {
+    // Attempt to get root password using XML with DOCTYPE declaration attempting XXE attack
+    String maliciousXml = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>" + "<!DOCTYPE foo [" + "<!ELEMENT foo ANY >"
+        + "<!ENTITY xxe SYSTEM \"file:///etc/passwd\" >]>" + "<foo>&xxe;</foo>"; // Credit to Wikipedia for this code
+
+    XPathParser parser = new XPathParser(maliciousXml);
+
+    String result = parser.evalString("/foo");
+
+    // Should not contain anything from the file
+    Assertions.assertFalse(result.contains("root:"));
+
+    String validXml = "<employee><name>John Doe</name></employee>";
+    parser = new XPathParser(validXml);
+    assertEquals("John Doe", parser.evalString("/employee/name"));
   }
 
 }

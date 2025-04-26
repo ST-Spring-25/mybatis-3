@@ -1,5 +1,5 @@
 /*
- *    Copyright 2009-2023 the original author or authors.
+ *    Copyright 2009-2025 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -83,6 +83,35 @@ class PropertyParserTest {
     Assertions.assertThat(PropertyParser.parse("${key?:}", props)).isEmpty();
     Assertions.assertThat(PropertyParser.parse("${key?: }", props)).isEqualTo(" ");
     Assertions.assertThat(PropertyParser.parse("${key?::}", props)).isEqualTo(":");
+  }
+
+  /**
+   * Test Case 5: Verifies how PropertyParser handles nested placeholders
+   * where one placeholder appears within another placeholder's syntax or value.
+   */
+  @Test
+  void handleNestedPlaceholders() {
+    Properties props = new Properties();
+    props.setProperty("outer", "value");
+    props.setProperty("inner", "outer");
+    props.setProperty("nested.property", "${outer}");
+
+    Assertions.assertThat(PropertyParser.parse("${${inner}}", props)).isEqualTo("${${inner}}");
+
+    Assertions.assertThat(PropertyParser.parse("${outer}", props)).isEqualTo("value");
+
+    // Multi-step parsing is required for nested resolution
+    String firstPass = PropertyParser.parse("${nested.property}", props);
+    Assertions.assertThat(firstPass).isEqualTo("${outer}");
+    String secondPass = PropertyParser.parse(firstPass, props);
+    Assertions.assertThat(secondPass).isEqualTo("value");
+
+    // Testing with explicit property containing nested syntax
+    props.setProperty("complex.expression", "${outer}-${inner}");
+    Assertions.assertThat(PropertyParser.parse("${complex.expression}", props)).isEqualTo("${outer}-${inner}");
+
+    props.setProperty("reference", "${outer}");
+    Assertions.assertThat(PropertyParser.parse("Result: ${reference}", props)).isEqualTo("Result: ${outer}");
   }
 
 }
